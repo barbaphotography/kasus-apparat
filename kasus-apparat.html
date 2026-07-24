@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Der Kasus-Apparat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --desk: #c7c1b0;
+    --desk-dark: #b3ac98;
+    --ink: #2b3a4a;
+    --ink-soft: #5a6b7a;
+    --paper-nom: #f7f4ec;
+    --paper-akk: #f3d7db;
+    --paper-dat: #f5e6b8;
+    --paper-gen: #d7e2e8;
+    --stamp-red: #a5342a;
+    --stamp-navy: #2b3a4a;
+    --line: rgba(43,58,74,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.15), transparent 60%),
+      var(--desk);
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    padding:28px 16px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:640px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:22px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Special Elite', monospace;
+    font-size:clamp(26px,6vw,36px);
+    margin:0 0 8px;
+    letter-spacing:0.01em;
+  }
+  .subtitle{font-size:14px;color:var(--ink-soft);margin:0;}
+
+  /* Mode navigation */
+  .mode-nav{display:flex;gap:6px;margin-bottom:18px;}
+  .mode-btn{
+    flex:1;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.04em;
+    padding:10px 8px;
+    border:1px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    cursor:pointer;
+    border-radius:2px;
+    text-transform:uppercase;
+  }
+  .mode-btn.active{background:var(--ink);color:#f4f1e8;}
+  .mode-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .mode-panel{display:none;}
+  .mode-panel.active{display:block;animation:reveal 0.2s ease;}
+
+  /* Theory accordion */
+  .theory-intro{
+    font-size:13.5px;line-height:1.6;background:rgba(255,255,255,0.4);
+    border:1px solid var(--line);padding:14px 16px;border-radius:2px;margin-bottom:16px;
+  }
+  .theory-intro ol{margin:8px 0 0;padding-left:20px;}
+  .theory-intro li{margin-bottom:4px;}
+
+  details.case-card{
+    border:1px solid var(--line);border-radius:2px;margin-bottom:10px;overflow:hidden;
+  }
+  details.case-card[open]{box-shadow:0 2px 0 rgba(0,0,0,0.05);}
+  details.case-card summary{
+    cursor:pointer;padding:14px 16px;font-family:'IBM Plex Mono',monospace;
+    font-weight:600;font-size:14px;letter-spacing:0.02em;
+    list-style:none;display:flex;justify-content:space-between;align-items:center;
+  }
+  details.case-card summary::-webkit-details-marker{display:none;}
+  details.case-card summary::after{content:'+';font-size:18px;font-weight:400;}
+  details.case-card[open] summary::after{content:'–';}
+  details.case-card[data-case="nom"] summary{background:var(--paper-nom);}
+  details.case-card[data-case="akk"] summary{background:var(--paper-akk);}
+  details.case-card[data-case="dat"] summary{background:var(--paper-dat);}
+  details.case-card[data-case="gen"] summary{background:var(--paper-gen);}
+  .case-body{padding:14px 16px 16px;font-size:13.5px;line-height:1.6;background:rgba(255,255,255,0.5);}
+  .case-body .q{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);margin:0 0 8px;}
+  .case-body .worked{
+    margin-top:10px;padding:10px 12px;background:rgba(43,58,74,0.05);border-left:3px solid var(--ink);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.6;
+  }
+  .case-body p{margin:0 0 8px;}
+  .case-body p:last-child{margin-bottom:0;}
+
+  /* Reference table toggle */
+  .ref-toggle{
+    width:100%;
+    background:var(--paper-nom);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:12px 16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 1px 0 var(--line);
+  }
+  .ref-toggle:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .ref-panel{
+    display:none;
+    background:var(--paper-nom);
+    border:1px solid var(--line);
+    border-top:none;
+    padding:16px;
+    font-size:13px;
+    animation:reveal 0.2s ease;
+  }
+  .ref-panel.open{display:block;}
+  @keyframes reveal{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+
+  table.kasus{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px;margin-bottom:14px;}
+  table.kasus th, table.kasus td{border:1px solid var(--line);padding:6px 8px;text-align:center;}
+  table.kasus th{background:rgba(43,58,74,0.06);font-weight:600;}
+  table.kasus td.case-label{text-align:left;font-weight:600;}
+  tr.row-nom td.case-label{border-left:4px solid #8a8367;}
+  tr.row-akk td.case-label{border-left:4px solid #b06b74;}
+  tr.row-dat td.case-label{border-left:4px solid #a98f3f;}
+  tr.row-gen td.case-label{border-left:4px solid #5f7d92;}
+
+  .verb-lists{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .verb-box{background:rgba(255,255,255,0.4);border:1px solid var(--line);padding:8px 10px;border-radius:2px;}
+  .verb-box h4{margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;}
+  .verb-box p{margin:0;font-size:12.5px;line-height:1.5;font-family:'IBM Plex Mono',monospace;}
+
+  .prep-note{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0;}
+  .prep-note strong{color:var(--ink);}
+
+  /* Difficulty toggle */
+  .diff-toggle{display:flex;gap:6px;margin-bottom:16px;}
+  .diff-btn{
+    flex:1;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:0.04em;
+    padding:8px 10px;border:1px solid var(--line);background:rgba(255,255,255,0.35);
+    color:var(--ink-soft);cursor:pointer;border-radius:2px;text-transform:uppercase;
+  }
+  .diff-btn.active{background:var(--ink);color:#f4f1e8;border-color:var(--ink);}
+  .diff-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+
+  .easy-table{
+    display:none;background:rgba(255,255,255,0.45);border:1px solid var(--line);
+    border-radius:2px;padding:12px 14px;margin-bottom:16px;
+  }
+  .easy-table.show{display:block;}
+  .easy-table table.kasus{margin-bottom:10px;}
+  .easy-table .prep-note{margin-bottom:0;}
+
+  /* Game card */
+  .card-index{margin-top:22px;position:relative;}
+  .steps{display:flex;gap:4px;margin-bottom:-1px;position:relative;z-index:2;}
+  .step{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    padding:6px 12px 8px;
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:3px 3px 0 0;
+    color:var(--ink-soft);
+    background:rgba(255,255,255,0.35);
+  }
+  .step.active{font-weight:700;color:var(--ink);background:rgba(255,255,255,0.7);}
+  .step.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--line);}
+  .step.wrong{color:var(--stamp-red);text-decoration-color:var(--stamp-red);}
+
+  .game-card{
+    border:1px solid var(--line);
+    border-radius:0 3px 3px 3px;
+    padding:22px 20px 20px;
+    position:relative;
+    min-height:210px;
+    transition:background 0.25s ease;
+    box-shadow:0 2px 0 rgba(0,0,0,0.05);
+  }
+  .game-card.bg-neutral{background:#efece1;}
+  .game-card.bg-nom{background:var(--paper-nom);}
+  .game-card.bg-akk{background:var(--paper-akk);}
+  .game-card.bg-dat{background:var(--paper-dat);}
+  .game-card.bg-gen{background:var(--paper-gen);}
+
+  .es-cue{font-size:13px;color:var(--ink-soft);margin:0 0 10px;font-style:italic;}
+  .de-sentence{font-family:'IBM Plex Mono',monospace;font-size:18px;line-height:1.5;margin:0 0 6px;}
+  .de-sentence .blank{
+    display:inline-block;min-width:52px;border-bottom:2px dotted var(--ink-soft);text-align:center;
+  }
+  .de-sentence .blank.filled{border-bottom-style:solid;font-weight:700;}
+  .de-sentence .clue{background:rgba(43,58,74,0.12);padding:0 4px;border-radius:2px;font-weight:700;}
+
+  .clue-note{font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;min-height:1em;}
+
+  .options{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .options.hidden{display:none;}
+  .opt-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:15px;
+    padding:8px 18px;
+    border:1.5px solid var(--ink);
+    background:transparent;
+    border-radius:2px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .opt-btn.case-btn{font-size:13px;}
+  .opt-btn:hover{background:rgba(43,58,74,0.08);}
+  .opt-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .opt-btn.correct-pick{background:var(--stamp-navy);color:#fff;border-color:var(--stamp-navy);}
+  .opt-btn.wrong-pick{background:var(--stamp-red);color:#fff;border-color:var(--stamp-red);}
+  .opt-btn:disabled{cursor:default;opacity:0.55;}
+  .opt-btn:disabled.correct-pick, .opt-btn:disabled.wrong-pick{opacity:1;}
+
+  .explain{
+    font-size:13.5px;line-height:1.55;margin-top:14px;padding-top:12px;
+    border-top:1px dashed var(--line);display:none;
+  }
+  .explain.show{display:block;}
+  .explain strong{color:var(--ink);}
+
+  .stamp{
+    position:absolute;top:16px;right:18px;
+    font-family:'Special Elite', monospace;
+    font-size:17px;letter-spacing:0.04em;text-transform:uppercase;
+    padding:6px 12px;border:3px solid;border-radius:4px;
+    max-width:180px;text-align:center;line-height:1.25;white-space:normal;
+    transform:rotate(-8deg) scale(0);
+    opacity:0;
+    transition:transform 0.28s cubic-bezier(.34,1.56,.64,1), opacity 0.2s ease;
+  }
+  .stamp.show{transform:rotate(-8deg) scale(1);opacity:0.92;}
+  .stamp.richtig{color:var(--stamp-navy);border-color:var(--stamp-navy);}
+  .stamp.falsch{color:var(--stamp-red);border-color:var(--stamp-red);}
+  .stamp.teilweise{color:#a98f3f;border-color:#a98f3f;}
+
+  .next-btn{
+    margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:0.04em;
+    padding:9px 18px;background:var(--ink);color:#f4f1e8;border:none;border-radius:2px;cursor:pointer;
+    display:none;text-transform:uppercase;
+  }
+  .next-btn.show{display:inline-block;}
+  .next-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px;}
+
+  footer.status{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);
+    letter-spacing:0.03em;
+  }
+  .aktenzeichen{background:rgba(255,255,255,0.4);padding:5px 10px;border:1px solid var(--line);border-radius:2px;}
+
+  @media (prefers-reduced-motion: reduce){
+    .stamp, .ref-panel{transition:none;animation:none;}
+  }
+  @media (max-width:480px){
+    .verb-lists{grid-template-columns:1fr;}
+    .de-sentence{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Formular Nr. 4 · Case Determination</p>
+    <h1>Der Kasus-Apparat</h1>
+    <p class="subtitle">Four copies, four cases. Fill out the form correctly.</p>
+  </header>
+
+  <div class="mode-nav">
+    <button class="mode-btn active" data-mode="theorie">1 · Theorie</button>
+    <button class="mode-btn" data-mode="tabelle">2 · Falltabelle</button>
+    <button class="mode-btn" data-mode="spiel">3 · Spiel</button>
+  </div>
+
+  <section class="mode-panel active" id="mode-theorie">
+    <div class="theory-intro">
+      To figure out which case to use, ask yourself these 3 questions in order:
+      <ol>
+        <li><strong>Does the verb force a fixed case?</strong> (helfen, danken, gefallen → always dative)</li>
+        <li><strong>Is there a preposition?</strong> If it's fixed (für, mit, etc.) that preposition decides. If it's a two-way preposition (in, auf, an...), check for movement (accusative) or location (dative).</li>
+        <li><strong>If none of that applies:</strong> is it the subject (nominative) or the direct object (accusative)?</li>
+      </ol>
+    </div>
+
+    <details class="case-card" data-case="nom" open>
+      <summary>Nominative — the one acting</summary>
+      <div class="case-body">
+        <p class="q">Wer? Was? (who? what?)</p>
+        <p>It's the subject of the sentence: whoever is doing the action, or whatever is being described with <em>sein</em>, <em>werden</em>, <em>bleiben</em>.</p>
+        <div class="worked">
+          <strong>Der Hund bellt.</strong><br>
+          Who's barking? → der Hund → it's the subject → nominative.
+        </div>
+      </div>
+    </details>
+
+    <details class="case-card" data-case="akk">
+      <summary>Accusative — the one receiving the action</summary>
+      <div class="case-body">
+        <p class="q">Wen? Was? (whom? what?)</p>
+        <p>It's the direct object: what receives the verb's action. Also required by certain fixed prepositions (durch, für, gegen, ohne, um) and by two-way prepositions when there's movement.</p>
+        <div class="worked">
+          <strong>Ich sehe den Hund.</strong><br>
+          Whom do I see? → den Hund → direct object → accusative (der → den for masculine).
+        </div>
+      </div>
+    </details>
+
+    <details class="case-card" data-case="dat">
+      <summary>Dative — the recipient</summary>
+      <div class="case-body">
+        <p class="q">Wem? (to/for whom?)</p>
+        <p>It's the indirect object: who something is being done to or for. English barely marks this (no difference between "I see him" and "I help him"), which is why it's the hardest to catch. Required by fixed verbs (helfen, danken, gefallen, gehören...), fixed prepositions (aus, bei, mit, nach, seit, von, zu), and two-way prepositions with location.</p>
+        <div class="worked">
+          <strong>Ich helfe dem Mann.</strong><br>
+          "Helfen" always takes dative, regardless of subject/object logic → dem Mann.
+        </div>
+      </div>
+    </details>
+
+    <details class="case-card" data-case="gen">
+      <summary>Genitive — the possessive</summary>
+      <div class="case-body">
+        <p class="q">Wessen? (whose?)</p>
+        <p>Shows possession. Barely used in spoken German — people say "von + dative" instead ("das Auto von dem Mann" instead of "das Auto des Mannes"). Still worth recognizing, especially with prepositions like wegen, während, trotz.</p>
+        <div class="worked">
+          <strong>Das Auto des Mannes.</strong><br>
+          Whose car is it? → des Mannes → possession → genitive (der → des, plus "-es" on the noun).
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="mode-panel" id="mode-tabelle">
+    <table class="kasus">
+      <thead>
+        <tr><th></th><th>der (m)</th><th>die (f)</th><th>das (n)</th><th>die (pl)</th></tr>
+      </thead>
+      <tbody>
+        <tr class="row-nom"><td class="case-label">Nominativ</td><td>der</td><td>die</td><td>das</td><td>die</td></tr>
+        <tr class="row-akk"><td class="case-label">Akkusativ</td><td>den</td><td>die</td><td>das</td><td>die</td></tr>
+        <tr class="row-dat"><td class="case-label">Dativ</td><td>dem</td><td>der</td><td>dem</td><td>den (+n)</td></tr>
+        <tr class="row-gen"><td class="case-label">Genitiv</td><td>des (+s)</td><td>der</td><td>des (+s)</td><td>der</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verb-lists">
+      <div class="verb-box">
+        <h4>Verbs + accusative</h4>
+        <p>haben · sehen · kaufen · brauchen · lieben · essen · trinken · suchen · finden · kennen</p>
+      </div>
+      <div class="verb-box">
+        <h4>Verbs + dative</h4>
+        <p>helfen · danken · gefallen · gehören · folgen · antworten · glauben · gratulieren · passen · fehlen</p>
+      </div>
+    </div>
+
+    <p class="prep-note">
+      <strong>Always accusative:</strong> bis, durch, für, gegen, ohne, um &nbsp;·&nbsp;
+      <strong>Always dative:</strong> aus, außer, bei, gegenüber, mit, nach, seit, von, zu &nbsp;·&nbsp;
+      <strong>Two-way (accusative = movement / dative = location):</strong> an, auf, hinter, in, neben, über, unter, vor, zwischen
+    </p>
+  </section>
+
+  <section class="mode-panel" id="mode-spiel">
+  <div class="card-index">
+    <div class="diff-toggle" id="diffToggle">
+      <button class="diff-btn active" data-diff="easy">Easy · table always visible</button>
+      <button class="diff-btn" data-diff="hard">Hard · no table</button>
+    </div>
+
+    <div class="easy-table show" id="easyTable">
+      <table class="kasus">
+        <thead>
+          <tr><th></th><th>der (m)</th><th>die (f)</th><th>das (n)</th><th>die (pl)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="row-nom"><td class="case-label">Nominative</td><td>der</td><td>die</td><td>das</td><td>die</td></tr>
+          <tr class="row-akk"><td class="case-label">Accusative</td><td>den</td><td>die</td><td>das</td><td>die</td></tr>
+          <tr class="row-dat"><td class="case-label">Dative</td><td>dem</td><td>der</td><td>dem</td><td>den (+n)</td></tr>
+          <tr class="row-gen"><td class="case-label">Genitive</td><td>des (+s)</td><td>der</td><td>des (+s)</td><td>der</td></tr>
+        </tbody>
+      </table>
+      <p class="prep-note">
+        <strong>Accusative:</strong> bis, durch, für, gegen, ohne, um &nbsp;·&nbsp;
+        <strong>Dative:</strong> aus, außer, bei, gegenüber, mit, nach, seit, von, zu &nbsp;·&nbsp;
+        <strong>Two-way:</strong> an, auf, hinter, in, neben, über, unter, vor, zwischen
+      </p>
+    </div>
+
+    <div class="steps" id="steps">
+      <div class="step" data-step="1">1 · Identify the case</div>
+      <div class="step" data-step="2">2 · Pick the article</div>
+    </div>
+
+    <div class="game-card bg-neutral" id="gameCard">
+      <div class="stamp" id="stamp"></div>
+      <p class="es-cue" id="esCue">—</p>
+      <p class="de-sentence" id="deSentence">—</p>
+      <p class="clue-note" id="clueNote"></p>
+
+      <div class="options" id="caseOptions"></div>
+      <div class="options hidden" id="options"></div>
+
+      <p class="explain" id="explain"></p>
+      <button class="next-btn" id="nextBtn">Next card →</button>
+    </div>
+
+    <footer class="status">
+      <span class="aktenzeichen" id="score">Aktenzeichen: 0000</span>
+      <span id="streak">Streak: 0 correct</span>
+    </footer>
+  </div>
+  </section>
+
+</div>
+
+<script>
+// --- Mode navigation ---
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.mode-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('mode-' + btn.dataset.mode).classList.add('active');
+  });
+});
+
+// --- Difficulty toggle ---
+document.querySelectorAll('.diff-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('easyTable').classList.toggle('show', btn.dataset.diff === 'easy');
+  });
+});
+
+// --- Noun declension data ---
+const nouns = {
+  Mann:  {gender:'m', word:'Mann',  forms:{nom:'der',akk:'den',dat:'dem',gen:'des'}},
+  Hund:  {gender:'m', word:'Hund',  forms:{nom:'der',akk:'den',dat:'dem',gen:'des'}},
+  Tisch: {gender:'m', word:'Tisch', forms:{nom:'der',akk:'den',dat:'dem',gen:'des'}},
+  Lehrer:{gender:'m', word:'Lehrer',forms:{nom:'der',akk:'den',dat:'dem',gen:'des'}},
+  Frau:  {gender:'f', word:'Frau',  forms:{nom:'die',akk:'die',dat:'der',gen:'der'}},
+  Katze: {gender:'f', word:'Katze', forms:{nom:'die',akk:'die',dat:'der',gen:'der'}},
+  Tasche:{gender:'f', word:'Tasche',forms:{nom:'die',akk:'die',dat:'der',gen:'der'}},
+  Schule:{gender:'f', word:'Schule',forms:{nom:'die',akk:'die',dat:'der',gen:'der'}},
+  Kind:  {gender:'n', word:'Kind',  forms:{nom:'das',akk:'das',dat:'dem',gen:'des'}},
+  Buch:  {gender:'n', word:'Buch',  forms:{nom:'das',akk:'das',dat:'dem',gen:'des'}},
+  Auto:  {gender:'n', word:'Auto',  forms:{nom:'das',akk:'das',dat:'dem',gen:'des'}},
+  Kinder:{gender:'pl',word:'Kinder',forms:{nom:'die',akk:'die',dat:'den',gen:'der'}}
+};
+
+const caseNames = {nom:'Nominative', akk:'Accusative', dat:'Dative', gen:'Genitive'};
+const caseLabels = ['nom','akk','dat','gen'];
+
+// --- Question bank ---
+// {cue (English translation), tpl (___ marks the article blank), noun, case, clue (word to highlight, or null), explain}
+const bank = [
+  {cue:'The man eats an apple.', tpl:'___ Mann isst einen Apfel.', noun:'Mann', case:'nom', clue:null, explain:'<strong>Mann</strong> is the subject of the sentence (who eats?) → nominative.'},
+  {cue:'The dog runs fast.', tpl:'___ Hund läuft schnell.', noun:'Hund', case:'nom', clue:null, explain:'Subject of the sentence → nominative.'},
+  {cue:'I see the man.', tpl:'Ich sehe ___ Mann.', noun:'Mann', case:'akk', clue:'sehe', explain:'<strong>sehen</strong> takes accusative: it\'s the direct object (whom do I see?).'},
+  {cue:'I buy the book.', tpl:'Ich kaufe ___ Buch.', noun:'Buch', case:'akk', clue:'kaufe', explain:'<strong>kaufen</strong> + direct object → accusative. "das" doesn\'t change for neuter, but watch masculine nouns: those change to "den".'},
+  {cue:'I need the dog (for the walk).', tpl:'Ich brauche ___ Hund.', noun:'Hund', case:'akk', clue:'brauche', explain:'<strong>brauchen</strong> + accusative. Masculine: der → den.'},
+  {cue:'I love the woman.', tpl:'Ich liebe ___ Frau.', noun:'Frau', case:'akk', clue:'liebe', explain:'Feminine stays the same in accusative (die → die).'},
+  {cue:'This is without the book.', tpl:'Das ist ohne ___ Buch.', noun:'Buch', case:'akk', clue:'ohne', explain:'<strong>ohne</strong> always takes accusative, no exceptions.'},
+  {cue:'This is for the child.', tpl:'Das ist für ___ Kind.', noun:'Kind', case:'akk', clue:'für', explain:'<strong>für</strong> always takes accusative.'},
+  {cue:'I help the man.', tpl:'Ich helfe ___ Mann.', noun:'Mann', case:'dat', clue:'helfe', explain:'<strong>helfen</strong> always takes dative. Masculine: der → dem.'},
+  {cue:'I thank the teacher.', tpl:'Ich danke ___ Lehrer.', noun:'Lehrer', case:'dat', clue:'danke', explain:'<strong>danken</strong> takes dative. Masculine: der → dem.'},
+  {cue:'The woman likes this.', tpl:'Das gefällt ___ Frau.', noun:'Frau', case:'dat', clue:'gefällt', explain:'<strong>gefallen</strong> takes dative. Feminine: die → der.'},
+  {cue:'The book belongs to the child.', tpl:'Das Buch gehört ___ Kind.', noun:'Kind', case:'dat', clue:'gehört', explain:'<strong>gehören</strong> always dative. Neuter: das → dem.'},
+  {cue:'I\'m going with the dog.', tpl:'Ich gehe mit ___ Hund.', noun:'Hund', case:'dat', clue:'mit', explain:'<strong>mit</strong> always takes dative, no exceptions.'},
+  {cue:'I\'m coming from school.', tpl:'Ich komme aus ___ Schule.', noun:'Schule', case:'dat', clue:'aus', explain:'<strong>aus</strong> always takes dative. Feminine: die → der.'},
+  {cue:'I\'m going to school.', tpl:'Ich gehe zu ___ Schule.', noun:'Schule', case:'dat', clue:'zu', explain:'<strong>zu</strong> always takes dative, even with movement — it\'s an exception to the two-way preposition logic.'},
+  {cue:'I put the book on the table (movement → where to?).', tpl:'Ich lege das Buch auf ___ Tisch.', noun:'Tisch', case:'akk', clue:'auf', explain:'<strong>auf</strong> with movement/direction (wohin?) → accusative. Masculine: der → den.'},
+  {cue:'The book is lying on the table (location → where?).', tpl:'Das Buch liegt auf ___ Tisch.', noun:'Tisch', case:'dat', clue:'auf', explain:'<strong>auf</strong> with fixed location (wo?) → dative. Masculine: der → dem.'},
+  {cue:'I\'m going into the school (movement).', tpl:'Ich gehe in ___ Schule.', noun:'Schule', case:'akk', clue:'in', explain:'<strong>in</strong> + movement (wohin?) → accusative. Feminine stays die.'},
+  {cue:'I am in school (location).', tpl:'Ich bin in ___ Schule.', noun:'Schule', case:'dat', clue:'in', explain:'<strong>in</strong> + location (wo?) → dative. Feminine: die → der.'},
+  {cue:'This is the man\'s car.', tpl:'Das ist das Auto ___ Mannes.', noun:'Mann', case:'gen', clue:null, explain:'Genitive shows possession (whose?). Masculine: der → des, and the noun adds "-es".'},
+  {cue:'The children are playing in the garden.', tpl:'___ Kinder spielen im Garten.', noun:'Kinder', case:'nom', clue:null, explain:'Plural subject → nominative. Plural always uses "die" in nominative/accusative.'},
+  {cue:'I help the children.', tpl:'Ich helfe ___ Kindern.', noun:'Kinder', case:'dat', clue:'helfe', explain:'<strong>helfen</strong> + dative. In plural, dative also adds "-n" to the noun: Kinder → Kindern.'},
+  {cue:'I buy the bag.', tpl:'Ich kaufe ___ Tasche.', noun:'Tasche', case:'akk', clue:'kaufe', explain:'Feminine doesn\'t change in accusative: die → die.'},
+  {cue:'This is against the cat (joking around).', tpl:'Das ist gegen ___ Katze.', noun:'Katze', case:'akk', clue:'gegen', explain:'<strong>gegen</strong> always takes accusative. Feminine: die → die.'}
+];
+
+// --- State ---
+let queue = [...bank].sort(()=>Math.random()-0.5);
+let wrongQueue = [];
+let current = null;
+let score = 0;
+let streak = 0;
+let step = 1;
+let caseWasCorrect = null;
+
+const allForms = ['der','die','das','den','dem','des'];
+
+function buildOptions(correct, pool){
+  const opts = new Set([correct]);
+  while(opts.size < 4){
+    opts.add(pool[Math.floor(Math.random()*pool.length)]);
+  }
+  return [...opts].sort(()=>Math.random()-0.5);
+}
+
+function nextQuestion(){
+  if(queue.length === 0){
+    if(wrongQueue.length === 0){
+      queue = [...bank].sort(()=>Math.random()-0.5);
+    } else {
+      queue = [...wrongQueue].sort(()=>Math.random()-0.5);
+      wrongQueue = [];
+    }
+  }
+  current = queue.shift();
+  step = 1;
+  caseWasCorrect = null;
+  render();
+}
+
+function render(){
+  document.getElementById('esCue').textContent = current.cue;
+  document.getElementById('deSentence').innerHTML =
+    current.tpl.replace('___', `<span class="blank" id="blankSpan">___</span>`);
+  document.getElementById('clueNote').textContent = '';
+  document.getElementById('explain').innerHTML = current.explain;
+  document.getElementById('explain').classList.remove('show');
+
+  const stamp = document.getElementById('stamp');
+  stamp.classList.remove('show','richtig','falsch','teilweise');
+  stamp.textContent = '';
+
+  document.getElementById('nextBtn').classList.remove('show');
+  document.getElementById('gameCard').className = 'game-card bg-neutral';
+
+  document.querySelectorAll('.step').forEach(s=>{
+    s.classList.remove('active','done','wrong');
+    if(s.dataset.step === '1') s.classList.add('active');
+  });
+
+  // Step 1: case options
+  const caseWrap = document.getElementById('caseOptions');
+  caseWrap.innerHTML = '';
+  caseWrap.classList.remove('hidden');
+  document.getElementById('options').classList.add('hidden');
+  document.getElementById('options').innerHTML = '';
+
+  const caseChoices = buildOptions(current.case, caseLabels);
+  caseChoices.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn case-btn';
+    btn.textContent = caseNames[c];
+    btn.dataset.case = c;
+    btn.addEventListener('click', ()=>handleCaseAnswer(c));
+    caseWrap.appendChild(btn);
+  });
+}
+
+function handleCaseAnswer(picked){
+  if(step !== 1) return;
+  step = 2;
+  caseWasCorrect = (picked === current.case);
+
+  document.querySelectorAll('#caseOptions .opt-btn').forEach(btn=>{
+    btn.disabled = true;
+    if(btn.dataset.case === current.case) btn.classList.add('correct-pick');
+    else if(btn.dataset.case === picked) btn.classList.add('wrong-pick');
+  });
+
+  document.querySelectorAll('.step').forEach(s=>{
+    s.classList.remove('active');
+    if(s.dataset.step === '1'){
+      s.classList.add('done');
+      if(!caseWasCorrect) s.classList.add('wrong');
+    }
+    if(s.dataset.step === '2') s.classList.add('active');
+  });
+
+  // Highlight the clue word, or explain there isn't one
+  const sentenceEl = document.getElementById('deSentence');
+  if(current.clue){
+    const re = new RegExp('\\b(' + current.clue + ')\\b');
+    sentenceEl.innerHTML = sentenceEl.innerHTML.replace(re, '<span class="clue">$1</span>');
+    document.getElementById('clueNote').innerHTML = `Clue: <strong>${current.clue}</strong> → ${caseNames[current.case]}`;
+  } else {
+    document.getElementById('clueNote').innerHTML = `No fixed verb or preposition here — it's the ${current.case === 'gen' ? 'possessor' : 'subject'} → ${caseNames[current.case]}.`;
+  }
+
+  // Reveal step 2: article options (keep step 1 visible, disabled, so mistakes stay visible)
+  const noun = nouns[current.noun];
+  const correctArticle = noun.forms[current.case];
+
+  const optsWrap = document.getElementById('options');
+  optsWrap.classList.remove('hidden');
+  optsWrap.innerHTML = '';
+  const articleChoices = buildOptions(correctArticle, allForms);
+  articleChoices.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.addEventListener('click', ()=>handleArticleAnswer(opt, correctArticle));
+    optsWrap.appendChild(btn);
+  });
+}
+
+function handleArticleAnswer(picked, correct){
+  if(step !== 2) return;
+  step = 3;
+  const articleWasCorrect = picked === correct;
+  const bothCorrect = caseWasCorrect && articleWasCorrect;
+
+  document.querySelectorAll('#options .opt-btn').forEach(btn=>{
+    btn.disabled = true;
+    if(btn.textContent === correct) btn.classList.add('correct-pick');
+    else if(btn.textContent === picked) btn.classList.add('wrong-pick');
+  });
+
+  const blank = document.getElementById('blankSpan');
+  if(blank){ blank.textContent = correct; blank.classList.add('filled'); }
+
+  document.querySelectorAll('.step').forEach(s=>{
+    s.classList.remove('active');
+    s.classList.add('done');
+  });
+
+  document.getElementById('gameCard').className = 'game-card bg-' + current.case;
+
+  const stamp = document.getElementById('stamp');
+  let stampText, stampCls;
+  if(caseWasCorrect && articleWasCorrect){
+    stampText = 'BEIDE RICHTIG'; stampCls = 'richtig';
+  } else if(caseWasCorrect && !articleWasCorrect){
+    stampText = 'KASUS RICHTIG'; stampCls = 'teilweise';
+  } else if(!caseWasCorrect && articleWasCorrect){
+    stampText = 'ARTIKEL RICHTIG'; stampCls = 'teilweise';
+  } else {
+    stampText = 'FALSCH'; stampCls = 'falsch';
+  }
+  stamp.textContent = stampText;
+  stamp.classList.add(stampCls);
+  requestAnimationFrame(()=> stamp.classList.add('show'));
+
+  document.getElementById('explain').classList.add('show');
+  document.getElementById('nextBtn').classList.add('show');
+
+  score += (caseWasCorrect ? 1 : 0) + (articleWasCorrect ? 1 : 0);
+  if(bothCorrect){
+    streak++;
+  } else {
+    streak = 0;
+    wrongQueue.push(current);
+  }
+  updateStatus();
+}
+
+function updateStatus(){
+  document.getElementById('score').textContent = 'Aktenzeichen: ' + String(score).padStart(4,'0');
+  document.getElementById('streak').textContent = 'Streak: ' + streak + ' correct';
+}
+
+document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+
+nextQuestion();
+</script>
+</body>
+</html>
