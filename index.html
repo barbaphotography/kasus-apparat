@@ -50,6 +50,15 @@
   }
   .subtitle{font-size:14px;color:var(--ink-soft);margin:0;}
 
+  .sound-toggle{
+    position:fixed;top:14px;right:14px;z-index:10;
+    font-size:16px;background:rgba(255,255,255,0.55);
+    border:1px solid var(--line);border-radius:50%;
+    width:36px;height:36px;cursor:pointer;line-height:1;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .sound-toggle:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+
   /* Mode navigation */
   .mode-nav{display:flex;gap:6px;margin-bottom:18px;}
   .mode-btn{
@@ -168,6 +177,7 @@
   }
   .easy-table.show{display:block;}
   .easy-table table.kasus{margin-bottom:10px;}
+  .easy-table table.kasus.hide{display:none;}
   .easy-table .prep-note{margin-bottom:0;}
 
   /* Game card */
@@ -280,6 +290,7 @@
 </style>
 </head>
 <body>
+<button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">🔊</button>
 <div class="wrap">
 
   <header>
@@ -351,6 +362,19 @@
         </div>
       </div>
     </details>
+
+    <details class="case-card" data-case="nom">
+      <summary>Bonus — indefinite articles (ein/eine)</summary>
+      <div class="case-body">
+        <p class="q">"a/an" instead of "the"</p>
+        <p>Everything above was about the <em>definite</em> article (der/die/das — "the"). The <em>indefinite</em> article (ein/eine — "a/an") follows the exact same case logic, just with different endings. Once you know der/die/das by case, this is nearly free: same endings (-em, -er, -en, -es), except nominative and accusative masculine/neuter drop the ending (just "ein", not "einer" or "eines").</p>
+        <div class="worked">
+          <strong>Ich helfe einem Mann.</strong><br>
+          Same reasoning as before: "helfen" → dative → masculine dative is "-em" → dem becomes einem.
+        </div>
+        <p style="margin-top:10px;">There's no indefinite plural — "eine Männer" doesn't exist. Plural uses no article, or "keine" to negate.</p>
+      </div>
+    </details>
   </section>
 
   <section class="mode-panel" id="mode-tabelle">
@@ -363,6 +387,18 @@
         <tr class="row-akk"><td class="case-label">Akkusativ</td><td>den</td><td>die</td><td>das</td><td>die</td></tr>
         <tr class="row-dat"><td class="case-label">Dativ</td><td>dem</td><td>der</td><td>dem</td><td>den (+n)</td></tr>
         <tr class="row-gen"><td class="case-label">Genitiv</td><td>des (+s)</td><td>der</td><td>des (+s)</td><td>der</td></tr>
+      </tbody>
+    </table>
+
+    <table class="kasus">
+      <thead>
+        <tr><th>ein-</th><th>der (m)</th><th>die (f)</th><th>das (n)</th><th>die (pl)</th></tr>
+      </thead>
+      <tbody>
+        <tr class="row-nom"><td class="case-label">Nominativ</td><td>ein</td><td>eine</td><td>ein</td><td>—</td></tr>
+        <tr class="row-akk"><td class="case-label">Akkusativ</td><td>einen</td><td>eine</td><td>ein</td><td>—</td></tr>
+        <tr class="row-dat"><td class="case-label">Dativ</td><td>einem</td><td>einer</td><td>einem</td><td>—</td></tr>
+        <tr class="row-gen"><td class="case-label">Genitiv</td><td>eines (+s)</td><td>einer</td><td>eines (+s)</td><td>—</td></tr>
       </tbody>
     </table>
 
@@ -391,8 +427,13 @@
       <button class="diff-btn" data-diff="hard">Hard · no table</button>
     </div>
 
+    <div class="diff-toggle" id="artToggle">
+      <button class="diff-btn active" data-art="definite">Definite (der/die/das)</button>
+      <button class="diff-btn" data-art="indefinite">Indefinite (ein/eine)</button>
+    </div>
+
     <div class="easy-table show" id="easyTable">
-      <table class="kasus">
+      <table class="kasus" id="defTable">
         <thead>
           <tr><th></th><th>der (m)</th><th>die (f)</th><th>das (n)</th><th>die (pl)</th></tr>
         </thead>
@@ -401,6 +442,17 @@
           <tr class="row-akk"><td class="case-label">Accusative</td><td>den</td><td>die</td><td>das</td><td>die</td></tr>
           <tr class="row-dat"><td class="case-label">Dative</td><td>dem</td><td>der</td><td>dem</td><td>den (+n)</td></tr>
           <tr class="row-gen"><td class="case-label">Genitive</td><td>des (+s)</td><td>der</td><td>des (+s)</td><td>der</td></tr>
+        </tbody>
+      </table>
+      <table class="kasus hide" id="indefTable">
+        <thead>
+          <tr><th>ein-</th><th>der (m)</th><th>die (f)</th><th>das (n)</th><th>die (pl)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="row-nom"><td class="case-label">Nominative</td><td>ein</td><td>eine</td><td>ein</td><td>—</td></tr>
+          <tr class="row-akk"><td class="case-label">Accusative</td><td>einen</td><td>eine</td><td>ein</td><td>—</td></tr>
+          <tr class="row-dat"><td class="case-label">Dative</td><td>einem</td><td>einer</td><td>einem</td><td>—</td></tr>
+          <tr class="row-gen"><td class="case-label">Genitive</td><td>eines (+s)</td><td>einer</td><td>eines (+s)</td><td>—</td></tr>
         </tbody>
       </table>
       <p class="prep-note">
@@ -445,16 +497,69 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     document.querySelectorAll('.mode-panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('mode-' + btn.dataset.mode).classList.add('active');
+    playSound('click');
   });
 });
 
 // --- Difficulty toggle ---
-document.querySelectorAll('.diff-btn').forEach(btn=>{
+document.querySelectorAll('#diffToggle .diff-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#diffToggle .diff-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('easyTable').classList.toggle('show', btn.dataset.diff === 'easy');
+    playSound('click');
   });
+});
+
+// --- Article mode toggle (definite / indefinite) ---
+let artMode = 'definite';
+document.querySelectorAll('#artToggle .diff-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#artToggle .diff-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    artMode = btn.dataset.art;
+    document.getElementById('defTable').classList.toggle('hide', artMode === 'indefinite');
+    document.getElementById('indefTable').classList.toggle('hide', artMode === 'definite');
+    playSound('click');
+    if(typeof nextQuestion === 'function') nextQuestion();
+  });
+});
+
+// --- Sound engine (Web Audio API, no external files) ---
+let soundOn = true;
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freqStart, freqEnd, duration, type){
+  if(!soundOn) return;
+  try{
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freqStart, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(freqEnd, ctx.currentTime + duration);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch(e){ /* audio not available, fail silently */ }
+}
+function playSound(kind){
+  if(kind === 'correct') playTone(440, 880, 0.18, 'triangle');
+  else if(kind === 'wrong') playTone(280, 140, 0.22, 'sawtooth');
+  else if(kind === 'partial') playTone(360, 400, 0.16, 'triangle');
+  else if(kind === 'click') playTone(600, 600, 0.05, 'square');
+}
+const soundToggleBtn = document.getElementById('soundToggle');
+soundToggleBtn.addEventListener('click', ()=>{
+  soundOn = !soundOn;
+  soundToggleBtn.textContent = soundOn ? '🔊' : '🔇';
+  if(soundOn) playSound('click');
 });
 
 // --- Noun declension data ---
@@ -475,10 +580,44 @@ const nouns = {
 
 const caseNames = {nom:'Nominative', akk:'Accusative', dat:'Dative', gen:'Genitive'};
 const caseLabels = ['nom','akk','dat','gen'];
+const genderLabels = {m:'Masculine', f:'Feminine', n:'Neuter', pl:'Plural'};
 
-// --- Question bank ---
-// {cue (English translation), tpl (___ marks the article blank), noun, case, clue (word to highlight, or null), explain}
-const bank = [
+// Indefinite article forms depend only on gender (no plural form exists)
+const indefiniteForms = {
+  m: {nom:'ein', akk:'einen', dat:'einem', gen:'eines'},
+  f: {nom:'eine', akk:'eine', dat:'einer', gen:'einer'},
+  n: {nom:'ein', akk:'ein', dat:'einem', gen:'eines'}
+};
+const indefAllForms = ['ein','eine','einen','einem','eines','einer'];
+
+function correctArticleFor(nounObj, kase){
+  if(artMode === 'indefinite' && nounObj.gender !== 'pl'){
+    return indefiniteForms[nounObj.gender][kase];
+  }
+  return nounObj.forms[kase];
+}
+function articleShiftNote(nounObj, kase){
+  const label = genderLabels[nounObj.gender];
+  if(artMode === 'indefinite' && nounObj.gender !== 'pl'){
+    const base = indefiniteForms[nounObj.gender].nom;
+    const form = indefiniteForms[nounObj.gender][kase];
+    return base === form ? `${label} (indefinite): stays ${form}.` : `${label} (indefinite): ${base} → ${form}.`;
+  }
+  const base = nounObj.forms.nom;
+  const form = nounObj.forms[kase];
+  return base === form ? `${label}: ${base} stays ${form}.` : `${label}: ${base} → ${form}.`;
+}
+
+// English translation for each noun, used by the sentence generator below
+const englishNoun = {
+  Mann:'man', Hund:'dog', Tisch:'table', Lehrer:'teacher', Frau:'woman',
+  Katze:'cat', Tasche:'bag', Schule:'school', Kind:'child', Buch:'book',
+  Auto:'car', Kinder:'children'
+};
+
+// --- Question bank: hand-written items (special context: movement/location,
+// genitive noun endings, plural dative endings — not safe to auto-generate) ---
+const manualBank = [
   {cue:'The man eats an apple.', tpl:'___ Mann isst einen Apfel.', noun:'Mann', case:'nom', clue:null, explain:'<strong>Mann</strong> is the subject of the sentence (who eats?) → nominative.'},
   {cue:'The dog runs fast.', tpl:'___ Hund läuft schnell.', noun:'Hund', case:'nom', clue:null, explain:'Subject of the sentence → nominative.'},
   {cue:'I see the man.', tpl:'Ich sehe ___ Mann.', noun:'Mann', case:'akk', clue:'sehe', explain:'<strong>sehen</strong> takes accusative: it\'s the direct object (whom do I see?).'},
@@ -504,6 +643,63 @@ const bank = [
   {cue:'I buy the bag.', tpl:'Ich kaufe ___ Tasche.', noun:'Tasche', case:'akk', clue:'kaufe', explain:'Feminine doesn\'t change in accusative: die → die.'},
   {cue:'This is against the cat (joking around).', tpl:'Das ist gegen ___ Katze.', noun:'Katze', case:'akk', clue:'gegen', explain:'<strong>gegen</strong> always takes accusative. Feminine: die → die.'}
 ];
+
+// --- Question bank: auto-generated items ---
+// Combine every noun (singular only — plural needs special-cased endings,
+// see manualBank) with a set of verbs/prepositions that force a fixed case,
+// so we get lots of variety without hand-writing every sentence.
+const genPool = {
+  akk: [
+    {clue:'sehe',    tpl:'Ich sehe ___ {n}.',    cue:'I see the {e}.'},
+    {clue:'kaufe',   tpl:'Ich kaufe ___ {n}.',   cue:'I buy the {e}.'},
+    {clue:'brauche', tpl:'Ich brauche ___ {n}.', cue:'I need the {e}.'},
+    {clue:'liebe',   tpl:'Ich liebe ___ {n}.',   cue:'I love the {e}.'},
+    {clue:'suche',   tpl:'Ich suche ___ {n}.',   cue:'I\'m looking for the {e}.'},
+    {clue:'finde',   tpl:'Ich finde ___ {n}.',   cue:'I find the {e}.'},
+    {clue:'kenne',   tpl:'Ich kenne ___ {n}.',   cue:'I know the {e}.'},
+    {clue:'ohne',    tpl:'Das ist ohne ___ {n}.',   cue:'This is without the {e}.'},
+    {clue:'für',     tpl:'Das ist für ___ {n}.',    cue:'This is for the {e}.'},
+    {clue:'gegen',   tpl:'Das ist gegen ___ {n}.',  cue:'This is against the {e}.'},
+    {clue:'durch',   tpl:'Ich gehe durch ___ {n}.', cue:'I\'m walking through the {e}.'},
+    {clue:'um',      tpl:'Ich laufe um ___ {n}.',   cue:'I\'m running around the {e}.'}
+  ],
+  dat: [
+    {clue:'helfe',    tpl:'Ich helfe ___ {n}.',    cue:'I help the {e}.'},
+    {clue:'danke',    tpl:'Ich danke ___ {n}.',    cue:'I thank the {e}.'},
+    {clue:'glaube',   tpl:'Ich glaube ___ {n}.',   cue:'I believe the {e}.'},
+    {clue:'antworte', tpl:'Ich antworte ___ {n}.', cue:'I answer the {e}.'},
+    {clue:'folge',    tpl:'Ich folge ___ {n}.',    cue:'I follow the {e}.'},
+    {clue:'mit',      tpl:'Ich gehe mit ___ {n}.',        cue:'I\'m going with the {e}.'},
+    {clue:'aus',      tpl:'Ich komme aus ___ {n}.',       cue:'I\'m coming from the {e}.'},
+    {clue:'bei',      tpl:'Ich bin bei ___ {n}.',         cue:'I\'m near the {e}.'},
+    {clue:'von',      tpl:'Das ist das Auto von ___ {n}.', cue:'This is the car belonging to the {e}.'},
+    {clue:'zu',       tpl:'Ich gehe zu ___ {n}.',         cue:'I\'m going to the {e}.'}
+  ]
+};
+
+function buildGeneratedBank(){
+  const items = [];
+  const singularNouns = Object.keys(nouns).filter(k => nouns[k].gender !== 'pl');
+  singularNouns.forEach(nounKey=>{
+    const nounObj = nouns[nounKey];
+    const en = englishNoun[nounKey];
+    ['akk','dat'].forEach(kase=>{
+      genPool[kase].forEach(item=>{
+        items.push({
+          cue: item.cue.replace('{e}', en),
+          tpl: item.tpl.replace('{n}', nounObj.word),
+          noun: nounKey,
+          case: kase,
+          clue: item.clue,
+          explain: `<strong>${item.clue}</strong> always takes ${caseNames[kase].toLowerCase()}.`
+        });
+      });
+    });
+  });
+  return items;
+}
+
+const bank = manualBank.concat(buildGeneratedBank());
 
 // --- State ---
 let queue = [...bank].sort(()=>Math.random()-0.5);
@@ -581,6 +777,7 @@ function handleCaseAnswer(picked){
   if(step !== 1) return;
   step = 2;
   caseWasCorrect = (picked === current.case);
+  playSound(caseWasCorrect ? 'correct' : 'wrong');
 
   document.querySelectorAll('#caseOptions .opt-btn').forEach(btn=>{
     btn.disabled = true;
@@ -609,12 +806,16 @@ function handleCaseAnswer(picked){
 
   // Reveal step 2: article options (keep step 1 visible, disabled, so mistakes stay visible)
   const noun = nouns[current.noun];
-  const correctArticle = noun.forms[current.case];
+  const correctArticle = correctArticleFor(noun, current.case);
+  const pool = (artMode === 'indefinite' && noun.gender !== 'pl') ? indefAllForms : allForms;
+
+  // Stash the article-shift note for use once step 2 is answered
+  current._articleNote = articleShiftNote(noun, current.case);
 
   const optsWrap = document.getElementById('options');
   optsWrap.classList.remove('hidden');
   optsWrap.innerHTML = '';
-  const articleChoices = buildOptions(correctArticle, allForms);
+  const articleChoices = buildOptions(correctArticle, pool);
   articleChoices.forEach(opt=>{
     const btn = document.createElement('button');
     btn.className = 'opt-btn';
@@ -629,6 +830,7 @@ function handleArticleAnswer(picked, correct){
   step = 3;
   const articleWasCorrect = picked === correct;
   const bothCorrect = caseWasCorrect && articleWasCorrect;
+  playSound(bothCorrect ? 'correct' : (caseWasCorrect || articleWasCorrect ? 'partial' : 'wrong'));
 
   document.querySelectorAll('#options .opt-btn').forEach(btn=>{
     btn.disabled = true;
@@ -661,7 +863,9 @@ function handleArticleAnswer(picked, correct){
   stamp.classList.add(stampCls);
   requestAnimationFrame(()=> stamp.classList.add('show'));
 
-  document.getElementById('explain').classList.add('show');
+  const explainEl = document.getElementById('explain');
+  explainEl.innerHTML = current.explain + (current._articleNote ? ' ' + current._articleNote : '');
+  explainEl.classList.add('show');
   document.getElementById('nextBtn').classList.add('show');
 
   score += (caseWasCorrect ? 1 : 0) + (articleWasCorrect ? 1 : 0);
@@ -679,7 +883,7 @@ function updateStatus(){
   document.getElementById('streak').textContent = 'Streak: ' + streak + ' correct';
 }
 
-document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+document.getElementById('nextBtn').addEventListener('click', ()=>{ playSound('click'); nextQuestion(); });
 
 nextQuestion();
 </script>

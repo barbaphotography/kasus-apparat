@@ -195,7 +195,79 @@ last as "barely used in spoken German"), not an arbitrary paywall.
    flag.
 4. Launch.
 
-## Known gaps / possible next steps
+## Recently implemented (this session)
+
+- **Bug fix — Definite/Indefinite toggle appeared broken**: the toggle's
+  underlying logic was actually correct (verified by simulating clicks in
+  jsdom — `artMode` and the button's `active` class updated fine, no JS
+  errors). The real problem was UX: unlike the Easy/Hard toggle, which
+  visibly hides/shows the reference table on click, the Definite/Indefinite
+  toggle only changed an internal variable with zero visible feedback until
+  the next time step 2 (article picking) was reached — so it looked dead on
+  tap. First fix attempt dimmed the non-matching table (`opacity:0.35`);
+  user didn't like that and asked for it to fully hide/show instead, to
+  match the Easy/Hard pattern exactly. Final fix: `#defTable` and
+  `#indefTable` toggle a `.hide{display:none;}` class on each other
+  (mutually exclusive, same mechanism as `#easyTable`'s `.show` class),
+  and `nextQuestion()` is called immediately on toggle so the practice card
+  reflects the change right away too. Verified with a jsdom click-simulation
+  script (not just by reasoning about the code) after the user reported the
+  first version "didn't work" — that first debugging pass showed the JS
+  itself had no bug at all; the fix was entirely about giving the toggle an
+  immediate, unambiguous visual result. General lesson for this project: a
+  state toggle with no immediate visible effect reads as broken on a touch
+  device, even when the underlying code is correct — pair every toggle with
+  something that visibly changes the instant it's tapped, and prefer a hard
+  show/hide over a subtle opacity change for consistency with the rest of
+  the UI's toggle patterns.
+
+- **Indefinite articles (ein/eine/einer/einem/eines)**: added as a toggle
+  inside `mode-spiel` (`#artToggle`, reuses `.diff-btn` styling), alongside
+  the existing Easy/Hard toggle. Indefinite forms are derived purely from
+  noun gender via a lookup table (`indefiniteForms`), since — unlike the
+  definite article — they don't vary noun-by-noun. No plural form exists,
+  so plural nouns (`Kinder`) always fall back to definite forms even in
+  indefinite mode (`correctArticleFor()` handles this). Added a 5th theory
+  card ("Bonus — indefinite articles") and a second compact table (in both
+  the Falltabelle mode and the always-visible Easy-mode table) showing
+  ein-/eine- forms by case. `articleShiftNote()` generates a dynamic
+  explanation line appended after each answer, e.g. "Feminine (indefinite):
+  eine → einer."
+
+- **Sentence bank expanded via generation, not hand-writing**: added
+  `genPool` (verb/preposition templates for accusative and dative, ~22
+  entries total) combined programmatically with the 11 singular nouns in
+  `buildGeneratedBank()`, yielding ~240 generated sentences on top of the
+  original ~24 hand-written ones (`manualBank`, kept separate — it still
+  covers the cases generation can't handle safely: Wechselpräpositionen
+  movement/location contrast, genitive noun-ending changes, and dative
+  plural noun-ending changes). Final `bank = manualBank.concat(
+  buildGeneratedBank())`. English cues and explain strings are also
+  templated (`{e}`/{n}` placeholders), not hand-translated per sentence.
+  Known minor rough edges: a few generated sentences are semantically odd
+  but grammatically valid (e.g. "Ich bin bei dem Buch" / "I'm near the
+  book") since templates were combined with all 11 nouns indiscriminately;
+  no de-duplication against `manualBank` was done, so a handful of
+  generated sentences may exactly repeat a manual one (e.g. "Ich sehe den
+  Mann"). Neither issue affects correctness, just occasional slight
+  repetition/awkwardness — fine to leave, or worth revisiting if it's
+  noticeable during play.
+
+- **Sound effects**: implemented with the Web Audio API (synthesized
+  oscillator tones, no external audio files, works fully offline) —
+  option 1 from the earlier backlog note. `playTone()` builds a short
+  pitch-ramped tone; `playSound(kind)` maps `'correct'` (rising triangle
+  wave), `'wrong'` (falling sawtooth), `'partial'` (short triangle, used
+  when case XOR article was right), and `'click'` (short square blip,
+  used for all button/toggle/next-card interactions) to that. A floating
+  mute toggle (`#soundToggle`, 🔊/🔇) sits fixed top-right of the page.
+  `soundOn` flag gates everything; `audioCtx` is lazily created on first
+  use (required by browser autoplay policies — can't create an
+  AudioContext before a user gesture).
+
+## Pending feedback (not yet implemented — backlog for next Claude Code session)
+
+
 
 - No persistence: score/streak/history reset on page reload. Nothing is
   saved server-side or in browser storage (intentionally avoided — see
